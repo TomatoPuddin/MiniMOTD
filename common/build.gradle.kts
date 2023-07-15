@@ -12,7 +12,6 @@ tasks.jar {
 dependencies {
   api(libs.configurateHocon)
   api(platform(libs.adventureBom))
-  api(libs.adventureApi)
   api(libs.adventureTextSerializerPlain)
   api(libs.adventureTextSerializerGson) {
     exclude("com.google.code.gson", "gson")
@@ -28,7 +27,8 @@ dependencies {
 blossom {
   val file = "src/main/java/xyz/jpenilla/minimotd/common/Constants.java"
   mapOf(
-    "PLUGIN_NAME" to rootProject.name,
+    "PLUGIN_ID" to Constants.ID,
+    "PLUGIN_NAME" to Constants.DISPLAY_NAME,
     "PLUGIN_VERSION" to project.version.toString(),
     "PLUGIN_WEBSITE" to Constants.GITHUB_URL,
     "GITHUB_USER" to Constants.GITHUB_USER,
