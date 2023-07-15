@@ -24,7 +24,6 @@
 package xyz.jpenilla.minimotd.common;
 
 import java.util.stream.Stream;
-import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -66,7 +65,7 @@ public final class CommandHandler {
       text()
         .content("By ")
         .color(GRAY)
-        .append(text("jmp", WHITE))
+        .append(text(Constants.PluginMetadata.GITHUB_USER, WHITE))
         .build(),
       header
     ).forEach(audience::sendMessage);
@@ -81,7 +80,7 @@ public final class CommandHandler {
         Constants.COMMAND_PREFIX,
         space(),
         text("Failed to reload MiniMOTD. Ensure there are no errors in your config files. See console for more details.", RED)
-      ));
+      ), false);
       return;
     }
 
@@ -127,5 +126,17 @@ public final class CommandHandler {
   @FunctionalInterface
   public interface Executor {
     void execute(Audience audience);
+  }
+
+  public interface Audience {
+    void sendMessage(Component component, boolean success);
+
+    default void sendMessage(Component component) {
+      sendMessage(component, true);
+    }
+
+    default void sendFailure(Component component) {
+      sendMessage(component, false);
+    }
   }
 }

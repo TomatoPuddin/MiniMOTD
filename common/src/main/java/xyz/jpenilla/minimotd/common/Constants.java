@@ -34,6 +34,7 @@ public final class Constants {
     private PluginMetadata() {
     }
 
+    public static final String ID = "${PLUGIN_ID}";
     public static final String NAME = "${PLUGIN_NAME}";
     public static final String VERSION = "${PLUGIN_VERSION}";
     public static final String WEBSITE = "${PLUGIN_WEBSITE}";

@@ -48,11 +48,6 @@ public final class ConfigManager {
   private final ConfigLoader<MiniMOTDConfig> mainConfigLoader;
   private MiniMOTDConfig mainConfig;
 
-  private final ConfigLoader<PluginSettings> pluginSettingsLoader;
-  private PluginSettings pluginSettings;
-
-  private final Map<String, MiniMOTDConfig> extraConfigs = new HashMap<>();
-
   public ConfigManager(final @NonNull MiniMOTD<?> miniMOTD) {
     this.miniMOTD = miniMOTD;
     this.mainConfigLoader = new ConfigLoader<>(
@@ -60,65 +55,14 @@ public final class ConfigManager {
       this.miniMOTD.dataDirectory().resolve("main.conf"),
       options -> options.header("MiniMOTD Main Configuration")
     );
-    this.pluginSettingsLoader = new ConfigLoader<>(
-      PluginSettings.class,
-      this.miniMOTD.dataDirectory().resolve("plugin_settings.conf"),
-      options -> options.header("MiniMOTD Plugin Configuration")
-    );
   }
 
   public void loadConfigs() {
     try {
       this.mainConfig = this.mainConfigLoader.load();
       this.mainConfigLoader.save(this.mainConfig);
-
-      this.pluginSettings = this.pluginSettingsLoader.load();
-      this.pluginSettingsLoader.save(this.pluginSettings);
     } catch (final ConfigurateException e) {
       throw new IllegalStateException("Failed to load config", e);
-    }
-  }
-
-  public void loadExtraConfigs() {
-    this.extraConfigs.clear();
-    final Path extraConfigsDir = this.miniMOTD.dataDirectory().resolve("extra-configs");
-    try {
-      if (!Files.exists(extraConfigsDir)) {
-        Files.createDirectories(extraConfigsDir);
-        this.createDefaultExtraConfigs(extraConfigsDir);
-      }
-      try (final Stream<Path> stream = Files.list(extraConfigsDir)) {
-        for (final Path path : stream.collect(Collectors.toList())) {
-          if (!path.toString().endsWith(".conf")) {
-            continue;
-          }
-          final String name = path.getFileName().toString().replace(".conf", "");
-          final ConfigLoader<MiniMOTDConfig> loader = new ConfigLoader<>(
-            MiniMOTDConfig.class,
-            path,
-            options -> options.header(String.format("Extra MiniMOTD config '%s'", name))
-          );
-          final MiniMOTDConfig config = loader.load();
-          loader.save(config);
-          this.extraConfigs.put(name, config);
-        }
-      }
-    } catch (final IOException e) {
-      throw new IllegalStateException("Failed to load virtual host configs", e);
-    }
-  }
-
-  private void createDefaultExtraConfigs(final @NonNull Path extraConfigsDir) throws ConfigurateException {
-    final List<Pair<Path, MiniMOTDConfig.MOTD>> defaults = ImmutableList.of(
-      pair(extraConfigsDir.resolve("skyblock.conf"), new MiniMOTDConfig.MOTD("<green><italic>Skyblock</green>", "<bold><rainbow>MiniMOTD Skyblock Server")),
-      pair(extraConfigsDir.resolve("survival.conf"), new MiniMOTDConfig.MOTD("<gradient:blue:red>Survival Mode Hardcore", "<green><bold>MiniMOTD Survival Server"))
-    );
-    for (final Pair<Path, MiniMOTDConfig.MOTD> pair : defaults) {
-      final ConfigLoader<MiniMOTDConfig> loader = new ConfigLoader<>(
-        MiniMOTDConfig.class,
-        pair.left()
-      );
-      loader.save(new MiniMOTDConfig(pair.right()));
     }
   }
 
@@ -128,41 +72,4 @@ public final class ConfigManager {
     }
     return this.mainConfig;
   }
-
-  public @NonNull PluginSettings pluginSettings() {
-    if (this.pluginSettings == null) {
-      throw new IllegalStateException("Config has not yet been loaded");
-    }
-    return this.pluginSettings;
-  }
-
-  public @NonNull MiniMOTDConfig resolveConfig(final @Nullable InetSocketAddress address) {
-    if (address == null) {
-      return this.mainConfig();
-    }
-    final String hostString = address.getHostString() + ":" + address.getPort();
-    final String configString = this.pluginSettings().proxySettings().findConfigStringForHost(hostString);
-
-    if (this.pluginSettings().proxySettings().virtualHostTestMode()) {
-      this.miniMOTD.platform().logger().info("[virtual-host-debug] Virtual Host: '{}', Selected Config: '{}'", hostString, configString == null ? "default" : configString);
-    }
-
-    if (configString == null) {
-      return this.mainConfig();
-    }
-    return this.resolveConfig(configString);
-  }
-
-  public @NonNull MiniMOTDConfig resolveConfig(final @NonNull String name) {
-    if ("default".equals(name)) {
-      return this.mainConfig();
-    }
-    final MiniMOTDConfig cfg = this.extraConfigs.get(name);
-    if (cfg != null) {
-      return cfg;
-    }
-    this.miniMOTD.logger().warn("Invalid extra-config name: '{}', falling back to main.conf", name);
-    return this.mainConfig();
-  }
-
 }

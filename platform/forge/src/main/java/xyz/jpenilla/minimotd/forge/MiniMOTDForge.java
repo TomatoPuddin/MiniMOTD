@@ -25,71 +25,79 @@ package xyz.jpenilla.minimotd.forge;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.nio.file.Path;
-import java.util.concurrent.CompletableFuture;
-import javax.imageio.ImageIO;
-import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
-import net.fabricmc.loader.api.FabricLoader;
-import net.kyori.adventure.platform.fabric.FabricServerAudiences;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.protocol.status.ServerStatus;
 import net.minecraft.server.MinecraftServer;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.server.ServerStartingEvent;
+import net.minecraftforge.event.server.ServerStoppedEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.Bindings;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.loading.FMLEnvironment;
+import net.minecraftforge.fml.loading.FMLPaths;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import xyz.jpenilla.minimotd.common.CommandHandler;
+import xyz.jpenilla.minimotd.common.Constants;
 import xyz.jpenilla.minimotd.common.MiniMOTD;
 import xyz.jpenilla.minimotd.common.MiniMOTDPlatform;
-import xyz.jpenilla.minimotd.common.util.UpdateChecker;
 import xyz.jpenilla.minimotd.forge.access.ServerStatusFaviconAccess;
+import xyz.jpenilla.minimotd.forge.util.ComponentConverter;
+
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.nio.file.Path;
 
 import static net.minecraft.commands.Commands.literal;
 
-public final class MiniMOTDFabric implements ModInitializer, MiniMOTDPlatform<ServerStatus.Favicon> {
-  private static MiniMOTDFabric instance = null;
+@Mod(Constants.PluginMetadata.ID)
+public final class MiniMOTDForge implements MiniMOTDPlatform<ServerStatus.Favicon> {
+  private static MiniMOTDForge instance = null;
 
   private final Logger logger = LoggerFactory.getLogger(MiniMOTD.class);
-  private final Path dataDirectory = FabricLoader.getInstance().getConfigDir().resolve("MiniMOTD");
-  private final MiniMOTD<ServerStatus.Favicon> miniMOTD = new MiniMOTD<>(this);
+  private final Path dataDirectory = FMLPaths.CONFIGDIR.get().resolve("minimotd");
+  private final MiniMOTD<ServerStatus.Favicon> miniMOTD;
 
   private MinecraftServer server;
-  private FabricServerAudiences audiences;
 
-  public MiniMOTDFabric() {
-    if (instance != null) {
-      throw new IllegalStateException("Cannot create a second instance of " + this.getClass().getName());
+  public MiniMOTDForge() {
+    if(FMLEnvironment.dist != Dist.DEDICATED_SERVER) {
+      miniMOTD = null;
+      return;
     }
+    if (instance != null)
+      throw new IllegalStateException("Cannot create a second instance of " + this.getClass().getName());
+
     instance = this;
+    Bindings.getForgeBus().get().register(this);
+    miniMOTD = new MiniMOTD<>(this);
+    this.miniMOTD.logger().info("Done initializing MiniMOTD");
   }
 
   public @NonNull MiniMOTD<ServerStatus.Favicon> miniMOTD() {
     return this.miniMOTD;
   }
 
-  @Override
-  public void onInitialize() {
-    this.registerCommand();
-    ServerLifecycleEvents.SERVER_STARTING.register(minecraftServer -> {
-      this.server = minecraftServer;
-      this.audiences = FabricServerAudiences.of(minecraftServer);
-    });
-    ServerLifecycleEvents.SERVER_STARTED.register(minecraftServer -> {
-      if (this.miniMOTD.configManager().pluginSettings().updateChecker()) {
-        CompletableFuture.runAsync(() -> new UpdateChecker().checkVersion().forEach(this.logger()::info));
-      }
-    });
-    ServerLifecycleEvents.SERVER_STOPPED.register($ -> {
-      this.server = null;
-      this.audiences = null;
-    });
-    this.miniMOTD.logger().info("Done initializing MiniMOTD");
+  @OnlyIn(Dist.DEDICATED_SERVER)
+  @SubscribeEvent
+  public void serverStarting(ServerStartingEvent event) {
+    this.server = event.getServer();
   }
 
-  private void registerCommand() {
+  @OnlyIn(Dist.DEDICATED_SERVER)
+  @SubscribeEvent
+  public void serverStopped(ServerStoppedEvent event) {
+    this.server = null;
+  }
+
+  @OnlyIn(Dist.DEDICATED_SERVER)
+  @SubscribeEvent
+  public void registerCommand(RegisterCommandsEvent event) {
     final class WrappingExecutor implements Command<CommandSourceStack> {
       private final CommandHandler.Executor handler;
 
@@ -99,26 +107,30 @@ public final class MiniMOTDFabric implements ModInitializer, MiniMOTDPlatform<Se
 
       @Override
       public int run(final @NonNull CommandContext<CommandSourceStack> context) {
-        this.handler.execute(context.getSource());
+        this.handler.execute((text, success) -> {
+          var source = context.getSource();
+          if(source.silent)
+            return;
+          if(success && source.source.acceptsSuccess())
+            source.sendSystemMessage(ComponentConverter.toNative(text));
+          else if(!success)
+            source.sendFailure(ComponentConverter.toNative(text));
+        });
         return Command.SINGLE_SUCCESS;
       }
     }
 
     final CommandHandler handler = new CommandHandler(this.miniMOTD);
-    CommandRegistrationCallback.EVENT.register((dispatcher, commandBuildContext, commandSelection) -> dispatcher.register(
+    event.getDispatcher().register(
       literal("minimotd")
         .requires(source -> source.hasPermission(4))
         .then(literal("reload").executes(new WrappingExecutor(handler::reload)))
         .then(literal("about").executes(new WrappingExecutor(handler::about)))
         .then(literal("help").executes(new WrappingExecutor(handler::help)))
-    ));
+    );
   }
 
-  public @NonNull FabricServerAudiences audiences() {
-    return this.audiences;
-  }
-
-  public static @NonNull MiniMOTDFabric get() {
+  public static @NonNull MiniMOTDForge get() {
     return instance;
   }
 
