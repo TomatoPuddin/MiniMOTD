@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package xyz.jpenilla.minimotd.fabric.mixin;
+package xyz.jpenilla.minimotd.forge.mixin;
 
 import java.util.Collections;
 import java.util.Objects;
@@ -40,9 +40,9 @@ import xyz.jpenilla.minimotd.common.MiniMOTD;
 import xyz.jpenilla.minimotd.common.PingResponse;
 import xyz.jpenilla.minimotd.common.config.MiniMOTDConfig;
 import xyz.jpenilla.minimotd.common.util.ComponentColorDownsampler;
-import xyz.jpenilla.minimotd.fabric.MiniMOTDFabric;
-import xyz.jpenilla.minimotd.fabric.access.ConnectionAccess;
-import xyz.jpenilla.minimotd.fabric.util.MutableServerStatus;
+import xyz.jpenilla.minimotd.forge.MiniMOTDFabric;
+import xyz.jpenilla.minimotd.forge.access.ConnectionAccess;
+import xyz.jpenilla.minimotd.forge.util.MutableServerStatus;
 
 @Mixin(ServerStatusPacketListenerImpl.class)
 abstract class ServerStatusPacketListenerImplMixin {

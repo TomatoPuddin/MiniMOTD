@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package xyz.jpenilla.minimotd.fabric.util;
+package xyz.jpenilla.minimotd.forge.util;
 
 import java.util.Objects;
 import java.util.Optional;

@@ -48,7 +48,7 @@ sequenceOf(
   "sponge7",
   "bungeecord",
   "velocity",
-  "fabric",
+  "forge",
 ).forEach(::platform)
 
 dist("bukkit-bungeecord")

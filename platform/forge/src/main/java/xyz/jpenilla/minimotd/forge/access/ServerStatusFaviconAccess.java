@@ -21,25 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package xyz.jpenilla.minimotd.fabric.mixin;
+package xyz.jpenilla.minimotd.forge.access;
 
-import net.minecraft.network.Connection;
-import net.minecraft.network.protocol.handshake.ClientIntentionPacket;
-import net.minecraft.server.network.ServerHandshakePacketListenerImpl;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import xyz.jpenilla.minimotd.fabric.access.ConnectionAccess;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-@Mixin(ServerHandshakePacketListenerImpl.class)
-abstract class ServerHandshakePacketListenerImplMixin {
-  @Shadow @Final private Connection connection;
+public interface ServerStatusFaviconAccess {
+  @Nullable String cachedEncodedIcon();
 
-  @Inject(method = "handleIntention", at = @At("HEAD"))
-  public void injectHandleIntention(final ClientIntentionPacket packet, final CallbackInfo ci) {
-    ((ConnectionAccess) this.connection).protocolVersion(packet.getProtocolVersion());
-  }
+  void cacheEncodedIcon();
 }

@@ -21,14 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package xyz.jpenilla.minimotd.fabric.mixin;
+package xyz.jpenilla.minimotd.forge.mixin;
 
 import net.minecraft.network.Connection;
 import org.spongepowered.asm.mixin.Implements;
 import org.spongepowered.asm.mixin.Interface;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
-import xyz.jpenilla.minimotd.fabric.access.ConnectionAccess;
+import xyz.jpenilla.minimotd.forge.access.ConnectionAccess;
 
 @Unique
 @Mixin(Connection.class)

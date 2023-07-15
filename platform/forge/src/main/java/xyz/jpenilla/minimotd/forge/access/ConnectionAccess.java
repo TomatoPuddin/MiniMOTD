@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package xyz.jpenilla.minimotd.fabric.access;
+package xyz.jpenilla.minimotd.forge.access;
 
 public interface ConnectionAccess {
   void protocolVersion(int protocolVersion);

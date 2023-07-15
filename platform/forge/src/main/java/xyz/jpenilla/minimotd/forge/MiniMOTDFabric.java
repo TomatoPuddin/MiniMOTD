@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package xyz.jpenilla.minimotd.fabric;
+package xyz.jpenilla.minimotd.forge;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
@@ -45,7 +45,7 @@ import xyz.jpenilla.minimotd.common.CommandHandler;
 import xyz.jpenilla.minimotd.common.MiniMOTD;
 import xyz.jpenilla.minimotd.common.MiniMOTDPlatform;
 import xyz.jpenilla.minimotd.common.util.UpdateChecker;
-import xyz.jpenilla.minimotd.fabric.access.ServerStatusFaviconAccess;
+import xyz.jpenilla.minimotd.forge.access.ServerStatusFaviconAccess;
 
 import static net.minecraft.commands.Commands.literal;
 
