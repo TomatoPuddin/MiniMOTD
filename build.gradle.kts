@@ -7,5 +7,6 @@ allprojects {
     gradlePluginPortal()
     mavenCentral()
     maven("https://maven.blamejared.com")
+    maven("https://maven.cleanroommc.com")
   }
 }

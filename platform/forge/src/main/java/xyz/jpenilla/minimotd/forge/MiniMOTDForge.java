@@ -23,23 +23,17 @@
  */
 package xyz.jpenilla.minimotd.forge;
 
-import com.mojang.brigadier.Command;
-import com.mojang.brigadier.context.CommandContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
-import net.minecraft.command.CommandSource;
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Loader;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
-import net.minecraftforge.fml.event.server.FMLServerStoppedEvent;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
+import net.minecraftforge.fml.common.event.FMLServerStoppedEvent;
+import net.minecraftforge.fml.relauncher.Side;
+import net.minecraftforge.fml.relauncher.SideOnly;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.NonNull;
@@ -47,7 +41,6 @@ import xyz.jpenilla.minimotd.common.CommandHandler;
 import xyz.jpenilla.minimotd.common.Constants;
 import xyz.jpenilla.minimotd.common.MiniMOTD;
 import xyz.jpenilla.minimotd.common.MiniMOTDPlatform;
-import xyz.jpenilla.minimotd.forge.util.ComponentConverter;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -56,23 +49,23 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Base64;
 
-import static net.minecraft.command.Commands.literal;
-
-@Mod(Constants.PluginMetadata.ID)
+@Mod(
+  modid = Constants.PluginMetadata.ID,
+  name = Constants.PluginMetadata.NAME,
+  version = Constants.PluginMetadata.VERSION,
+  serverSideOnly = true,
+  acceptableRemoteVersions = "*"
+)
 public final class MiniMOTDForge implements MiniMOTDPlatform<String> {
   private static MiniMOTDForge instance = null;
 
   private final Logger logger = LogManager.getLogger(MiniMOTD.class);
-  private final Path dataDirectory = FMLPaths.CONFIGDIR.get().resolve("minimotd");
+  private final Path dataDirectory = Loader.instance().getConfigDir().toPath().resolve("minimotd");
   private final MiniMOTD<String> miniMOTD;
 
   private MinecraftServer server;
 
   public MiniMOTDForge() {
-    if(FMLEnvironment.dist != Dist.DEDICATED_SERVER) {
-      miniMOTD = null;
-      return;
-    }
     if (instance != null)
       throw new IllegalStateException("Cannot create a second instance of " + this.getClass().getName());
 
@@ -86,49 +79,18 @@ public final class MiniMOTDForge implements MiniMOTDPlatform<String> {
     return this.miniMOTD;
   }
 
-  @OnlyIn(Dist.DEDICATED_SERVER)
-  @SubscribeEvent
+  @SideOnly(Side.SERVER)
+  @Mod.EventHandler
   public void serverStarting(FMLServerStartingEvent event) {
     this.server = event.getServer();
+    final CommandHandler handler = new CommandHandler(instance.miniMOTD);
+    event.registerServerCommand(new MiniMOTDCommand(handler));
   }
 
-  @OnlyIn(Dist.DEDICATED_SERVER)
-  @SubscribeEvent
+  @SideOnly(Side.SERVER)
+  @Mod.EventHandler
   public void serverStopped(FMLServerStoppedEvent event) {
     this.server = null;
-  }
-
-  @OnlyIn(Dist.DEDICATED_SERVER)
-  @SubscribeEvent
-  public void registerCommand(RegisterCommandsEvent event) {
-    final class WrappingExecutor implements Command<CommandSource> {
-      private final CommandHandler.Executor handler;
-
-      WrappingExecutor(final CommandHandler.@NonNull Executor handler) {
-        this.handler = handler;
-      }
-
-      @Override
-      public int run(final @NonNull CommandContext<CommandSource> context) {
-        this.handler.execute((text, success) -> {
-          CommandSource source = context.getSource();
-          if(success)
-            source.sendSuccess(ComponentConverter.toNative(text), false);
-          else
-            source.sendFailure(ComponentConverter.toNative(text));
-        });
-        return Command.SINGLE_SUCCESS;
-      }
-    }
-
-    final CommandHandler handler = new CommandHandler(this.miniMOTD);
-    event.getDispatcher().register(
-      literal("minimotd")
-        .requires(source -> source.hasPermission(4))
-        .then(literal("reload").executes(new WrappingExecutor(handler::reload)))
-        .then(literal("about").executes(new WrappingExecutor(handler::about)))
-        .then(literal("help").executes(new WrappingExecutor(handler::help)))
-    );
   }
 
   public static @NonNull MiniMOTDForge get() {

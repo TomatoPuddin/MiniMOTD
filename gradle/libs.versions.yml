@@ -21,12 +21,13 @@ versions:
   log4j: 2.15.0
   gson: 2.8.0
   guava: 21.0
-  forge: 36.2.39
-  forgeTarget: '[36,)'
-  minecraft: 1.16.5
-  minecraftTarget: '[1.16.5,1.17)'
-  minecraftTargetH: 'mc1.16.5'
+  forge: 14.23.5.2860
+  mappingChannel: stable
+  mappingVersion: 39-1.12
+  minecraft: 1.12.2
+  minecraftTargetH: 'mc1.12.2'
   mixin: 0.8.5
+  mixinBooter: 8.3
   jupiterEngine: 5.9.2
 
 dependencies:
@@ -76,6 +77,10 @@ dependencies:
     group: org.spongepowered
     name: mixin
     version: { ref: mixin }
+  mixinBooter:
+    group: zone.rong
+    name: mixinbooter
+    version: { ref: mixinBooter }
 
   jupiterEngine:
     group: org.junit.jupiter

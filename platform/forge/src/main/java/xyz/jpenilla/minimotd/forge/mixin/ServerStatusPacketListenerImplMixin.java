@@ -24,16 +24,17 @@
 package xyz.jpenilla.minimotd.forge.mixin;
 
 import com.mojang.authlib.GameProfile;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.network.ServerStatusResponse;
-import net.minecraft.network.status.ServerStatusNetHandler;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.NetHandlerStatusServer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import xyz.jpenilla.minimotd.common.MiniMOTD;
 import xyz.jpenilla.minimotd.common.PingResponse;
 import xyz.jpenilla.minimotd.common.config.MiniMOTDConfig;
+import xyz.jpenilla.minimotd.common.util.ComponentColorDownsampler;
 import xyz.jpenilla.minimotd.forge.MiniMOTDForge;
 import xyz.jpenilla.minimotd.forge.util.ComponentConverter;
 
@@ -41,29 +42,29 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
 
-@Mixin(ServerStatusNetHandler.class)
+@Mixin(NetHandlerStatusServer.class)
 abstract class ServerStatusPacketListenerImplMixin {
 
   @Redirect(
-    method = "handleStatusRequest",
-    at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;getStatus()Lnet/minecraft/network/ServerStatusResponse;")
+    method = "processServerQuery",
+    at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;getServerStatusResponse()Lnet/minecraft/network/ServerStatusResponse;")
   )
   public ServerStatusResponse injectHandleStatusRequest(final MinecraftServer server) {
     try {
       final MiniMOTDForge miniMOTDForge = MiniMOTDForge.get();
-      final ServerStatusResponse status = Objects.requireNonNull(server.getStatus(), "status");
+      final ServerStatusResponse status = Objects.requireNonNull(server.getServerStatusResponse(), "status");
 
       final MiniMOTD<String> miniMOTD = miniMOTDForge.miniMOTD();
       final MiniMOTDConfig config = miniMOTD.configManager().mainConfig();
 
       final PingResponse<String> response = miniMOTD.createMOTD(
         config,
-        server.getPlayerCount(),
+        server.getCurrentPlayerCount(),
         server.getMaxPlayers()
       );
 
       response.motd(motd -> {
-        status.setDescription(ComponentConverter.toNative(motd));
+        status.setServerDescription(ComponentConverter.toNative(ComponentColorDownsampler.downsampler().downsample(motd)));
       });
       response.icon(status::setFavicon);
 
@@ -74,11 +75,11 @@ abstract class ServerStatusPacketListenerImplMixin {
           response.playerCount().maxPlayers(),
           response.playerCount().onlinePlayers());
         if (!response.disablePlayerListHover()) {
-          ArrayList<PlayerEntity> players = new ArrayList<>(server.getPlayerList().getPlayers());
+          ArrayList<EntityPlayerMP> players = new ArrayList<>(server.getPlayerList().getPlayers());
           Collections.shuffle(players);
 
-          GameProfile[] gameProfiles = players.stream().map(PlayerEntity::getGameProfile).limit(12).toArray(GameProfile[]::new);
-          newPlayers.setSample(gameProfiles);
+          GameProfile[] gameProfiles = players.stream().map(EntityPlayerMP::getGameProfile).limit(12).toArray(GameProfile[]::new);
+          newPlayers.setPlayers(gameProfiles);
         }
         status.setPlayers(newPlayers);
       }

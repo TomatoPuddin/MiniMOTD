@@ -5,6 +5,6 @@ import net.minecraft.util.text.ITextComponent;
 
 public class ComponentConverter {
   public static ITextComponent toNative(net.kyori.adventure.text.Component component) {
-    return ITextComponent.Serializer.fromJson(GsonComponentSerializer.gson().serialize(component));
+    return ITextComponent.Serializer.fromJsonLenient(GsonComponentSerializer.gson().serialize(component));
   }
 }

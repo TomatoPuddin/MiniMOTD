@@ -13,12 +13,10 @@ plugins {
 val shade: Configuration by configurations.creating
 val gameVersion: String = libs.versions.minecraft.get()
 val loaderVersion: String = libs.versions.forge.get()
-val gameVersionRange: String = libs.versions.minecraftTarget.get()
 val gameVersionRangeH: String = libs.versions.minecraftTargetH.get()
-val forgeVersionRange: String = libs.versions.forgeTarget.get()
 
 configure<UserDevExtension> {
-  mappings("official", gameVersion)
+  mappings(libs.versions.mappingChannel.get(), libs.versions.mappingVersion.get())
 
   // accessTransformer(file("src/main/resources/META-INF/accesstransformer.cfg"))
   copyIdeResources.set(true)
@@ -51,6 +49,7 @@ dependencies {
   minecraft("net.minecraftforge:forge:${gameVersion}-${loaderVersion}")
 
   shade(implementation(projects.minimotdCommon){})
+  compileOnly(libs.mixinBooter)
 
   annotationProcessor(variantOf(libs.mixin){
     classifier("processor")
@@ -67,9 +66,7 @@ tasks {
   processResources {
     val replaceProperties = mapOf(
       "minecraft_version" to gameVersion,
-      "minecraft_version_range" to gameVersionRange,
       "forge_version" to loaderVersion,
-      "forge_version_range" to forgeVersionRange,
       "mod_id" to Constants.ID,
       "mod_name" to Constants.DISPLAY_NAME,
       "mod_license" to "MIT",
@@ -80,7 +77,7 @@ tasks {
       "issue_tracker_url" to Constants.GITHUB_ISSUES_URL)
 
     inputs.properties(replaceProperties)
-    filesMatching(listOf("META-INF/mods.toml", "pack.mcmeta")) {
+    filesMatching(listOf("mcmod.info", "pack.mcmeta")) {
       expand(replaceProperties)
     }
   }
@@ -102,13 +99,18 @@ tasks {
         "Implementation-Title"     to Constants.DISPLAY_NAME,
         "Implementation-Version"   to version,
         "Implementation-Vendor"    to Constants.GITHUB_USER,
-        "Implementation-Timestamp" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(Date())
+        "Implementation-Timestamp" to SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").format(Date()),
+        "TweakClass"               to "org.spongepowered.asm.launch.MixinTweaker",
+        "FMLCorePlugin"            to "xyz.jpenilla.minimotd.forge.CoreMod",
+        "ForceLoadAsMod"           to "true",
+        "FMLCorePluginContainsFMLMod" to "true",
       ))
     }
 
     archiveFileName.set("minimotd-reforged-$gameVersionRangeH-${project.version}.jar")
 
     configurations = listOf(shade)
+    exclude { el -> el.relativePath.pathString.startsWith("META-INF/versions/") }
     commonRelocation("io.leangen.geantyref")
     commonRelocation("net.kyori")
     finalizedBy("reobfShadowJar")
