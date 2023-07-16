@@ -26,7 +26,6 @@ package xyz.jpenilla.minimotd.forge.mixin;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.protocol.status.ServerStatus;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerStatusPacketListenerImpl;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
@@ -37,68 +36,57 @@ import xyz.jpenilla.minimotd.common.PingResponse;
 import xyz.jpenilla.minimotd.common.config.MiniMOTDConfig;
 import xyz.jpenilla.minimotd.forge.MiniMOTDForge;
 import xyz.jpenilla.minimotd.forge.util.ComponentConverter;
-import xyz.jpenilla.minimotd.forge.util.MutableServerStatus;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Objects;
 
 @Mixin(ServerStatusPacketListenerImpl.class)
 abstract class ServerStatusPacketListenerImplMixin {
 
   @Redirect(
     method = "handleStatusRequest",
-    at = @At(value = "FIELD", target = "Lnet/minecraft/server/network/ServerStatusPacketListenerImpl;status:Lnet/minecraft/network/protocol/status/ServerStatus;")
+    at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;getStatus()Lnet/minecraft/network/protocol/status/ServerStatus;")
   )
-  public ServerStatus injectHandleStatusRequest(final ServerStatusPacketListenerImpl instance) {
+  public ServerStatus injectHandleStatusRequest(final MinecraftServer server) {
     try {
       final MiniMOTDForge miniMOTDForge = MiniMOTDForge.get();
-      final MinecraftServer minecraftServer = miniMOTDForge.requireServer();
-      final ServerStatus vanillaStatus = Objects.requireNonNull(minecraftServer.getStatus(), "vanillaStatus");
+      final ServerStatus status = Objects.requireNonNull(server.getStatus(), "status");
 
-      final MiniMOTD<ServerStatus.Favicon> miniMOTD = miniMOTDForge.miniMOTD();
+      final MiniMOTD<String> miniMOTD = miniMOTDForge.miniMOTD();
       final MiniMOTDConfig config = miniMOTD.configManager().mainConfig();
 
-      final PingResponse<ServerStatus.Favicon> response = miniMOTD.createMOTD(
+      final PingResponse<String> response = miniMOTD.createMOTD(
         config,
-        minecraftServer.getPlayerCount(),
-        vanillaStatus.players().map(ServerStatus.Players::max).orElseGet(minecraftServer::getMaxPlayers)
+        server.getPlayerCount(),
+        server.getMaxPlayers()
       );
 
-      final MutableServerStatus modifiedStatus = new MutableServerStatus(vanillaStatus);
       response.motd(motd -> {
-          modifiedStatus.description(ComponentConverter.toNative(motd));
+        status.setDescription(ComponentConverter.toNative(motd));
       });
-      response.icon(favicon -> modifiedStatus.favicon(Optional.of(favicon)));
+      response.icon(status::setFavicon);
 
       if (response.hidePlayerCount()) {
-        modifiedStatus.players(Optional.empty());
+        status.setPlayers(null);
       } else {
-        List<ServerPlayer> players = new ArrayList<>(minecraftServer.getPlayerList().getPlayers());
-        Collections.shuffle(players);
-        List<GameProfile> profiles = response.disablePlayerListHover()
-          ? Collections.emptyList()
-          : players.stream().map(Player::getGameProfile).limit(12).collect(Collectors.toList());
-
         final ServerStatus.Players newPlayers = new ServerStatus.Players(
           response.playerCount().maxPlayers(),
-          response.playerCount().onlinePlayers(),
-          profiles
-        );
-        modifiedStatus.players(Optional.of(newPlayers));
+          response.playerCount().onlinePlayers());
+        if (!response.disablePlayerListHover()) {
+          var players = new ArrayList<>(server.getPlayerList().getPlayers());
+          Collections.shuffle(players);
+
+          GameProfile[] gameProfiles = players.stream().map(Player::getGameProfile).limit(12).toArray(GameProfile[]::new);
+          newPlayers.setSample(gameProfiles);
+        }
+        status.setPlayers(newPlayers);
       }
 
-      return modifiedStatus.toServerStatus();
+      return status;
     } catch (Exception e) {
       MiniMOTDForge.get().logger().error("Error processing motd", e);
       throw e;
     }
-  }
-
-    @Redirect(
-    method = "handleStatusRequest(Lnet/minecraft/network/protocol/status/ServerboundStatusRequestPacket;)V",
-    at = @At(value = "FIELD", target = "Lnet/minecraft/server/network/ServerStatusPacketListenerImpl;statusCache:Ljava/lang/String;", remap = false)
-  )
-  public String injectStatusJsonAccess(final ServerStatusPacketListenerImpl instance) {
-    return null;
   }
 }

@@ -21,11 +21,11 @@ versions:
   slf4j: 1.7.32
   gson: 2.8.0
   guava: 21.0
-  forge: 47.1.0
-  forgeTarget: '[45,)'
-  minecraft: 1.20.1
-  minecraftTarget: '[1.19.4,)'
-  minecraftTargetH: 'mc1.19.4+1.20.x'
+  forge: 43.2.18
+  forgeTarget: '[38,)'
+  minecraft: 1.19.2
+  minecraftTarget: '[1.18,1.19.3]'
+  minecraftTargetH: 'mc1.18+1.19.3'
   mixin: 0.8.5
   jupiterEngine: 5.9.2
 

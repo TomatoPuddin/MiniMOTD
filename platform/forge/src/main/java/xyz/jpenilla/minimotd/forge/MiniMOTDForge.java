@@ -25,8 +25,10 @@ package xyz.jpenilla.minimotd.forge;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.Unpooled;
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.protocol.status.ServerStatus;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
@@ -45,23 +47,24 @@ import xyz.jpenilla.minimotd.common.CommandHandler;
 import xyz.jpenilla.minimotd.common.Constants;
 import xyz.jpenilla.minimotd.common.MiniMOTD;
 import xyz.jpenilla.minimotd.common.MiniMOTDPlatform;
-import xyz.jpenilla.minimotd.forge.access.ServerStatusFaviconAccess;
 import xyz.jpenilla.minimotd.forge.util.ComponentConverter;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Base64;
 
 import static net.minecraft.commands.Commands.literal;
 
 @Mod(Constants.PluginMetadata.ID)
-public final class MiniMOTDForge implements MiniMOTDPlatform<ServerStatus.Favicon> {
+public final class MiniMOTDForge implements MiniMOTDPlatform<String> {
   private static MiniMOTDForge instance = null;
 
   private final Logger logger = LoggerFactory.getLogger(MiniMOTD.class);
   private final Path dataDirectory = FMLPaths.CONFIGDIR.get().resolve("minimotd");
-  private final MiniMOTD<ServerStatus.Favicon> miniMOTD;
+  private final MiniMOTD<String> miniMOTD;
 
   private MinecraftServer server;
 
@@ -79,7 +82,7 @@ public final class MiniMOTDForge implements MiniMOTDPlatform<ServerStatus.Favico
     this.miniMOTD.logger().info("Done initializing MiniMOTD");
   }
 
-  public @NonNull MiniMOTD<ServerStatus.Favicon> miniMOTD() {
+  public @NonNull MiniMOTD<String> miniMOTD() {
     return this.miniMOTD;
   }
 
@@ -109,11 +112,9 @@ public final class MiniMOTDForge implements MiniMOTDPlatform<ServerStatus.Favico
       public int run(final @NonNull CommandContext<CommandSourceStack> context) {
         this.handler.execute((text, success) -> {
           var source = context.getSource();
-          if(source.silent)
-            return;
-          if(success && source.source.acceptsSuccess())
-            source.sendSystemMessage(ComponentConverter.toNative(text));
-          else if(!success)
+          if(success)
+            source.sendSuccess(ComponentConverter.toNative(text), false);
+          else
             source.sendFailure(ComponentConverter.toNative(text));
         });
         return Command.SINGLE_SUCCESS;
@@ -152,11 +153,16 @@ public final class MiniMOTDForge implements MiniMOTDPlatform<ServerStatus.Favico
   }
 
   @Override
-  public ServerStatus.@NonNull Favicon loadIcon(final @NonNull BufferedImage bufferedImage) throws Exception {
-    final ByteArrayOutputStream out = new ByteArrayOutputStream();
-    ImageIO.write(bufferedImage, "PNG", out);
-    final ServerStatus.Favicon favicon = new ServerStatus.Favicon(out.toByteArray());
-    ((ServerStatusFaviconAccess) (Object) favicon).cacheEncodedIcon();
-    return favicon;
+  public @NonNull String loadIcon(final @NonNull BufferedImage bufferedImage) throws Exception {
+    final ByteBuf byteBuf = Unpooled.buffer();
+    final String icon;
+    try {
+      ImageIO.write(bufferedImage, "PNG", new ByteBufOutputStream(byteBuf));
+      final ByteBuffer base64 = Base64.getEncoder().encode(byteBuf.nioBuffer());
+      icon = "data:image/png;base64," + StandardCharsets.UTF_8.decode(base64);
+    } finally {
+      byteBuf.release();
+    }
+    return icon;
   }
 }

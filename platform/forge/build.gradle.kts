@@ -20,7 +20,7 @@ val forgeVersionRange: String = libs.versions.forgeTarget.get()
 configure<UserDevExtension> {
   mappings("official", gameVersion)
 
-  accessTransformer(file("src/main/resources/META-INF/accesstransformer.cfg"))
+  // accessTransformer(file("src/main/resources/META-INF/accesstransformer.cfg"))
   copyIdeResources.set(true)
 
   runs {
