@@ -24,9 +24,8 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Server Software and Version:**
- - Vendor: [e.g. Paper, Tuinity, Velocity, BungeeCord, Waterfall, Fabric, Sponge]
- - Minecraft Version: [e.g. 1.15.2, 1.16.3]
- - Output of /version command: [e.g. This server is running Paper version git-Paper-53 (MC: 1.16.1) (Implementing API version 1.16.1-R0.1-SNAPSHOT)] 
+ - Minecraft Version: [e.g. 1.20.1]
+ - Forge Version: [e.g. 47.1.0] 
 
 **Additional context**
 Add any other context about the problem here.
