@@ -17,7 +17,7 @@ dependencies {
     exclude("com.google.code.gson", "gson")
   }
   api(libs.minimessage)
-  compileOnlyApi(libs.slf4jApi)
+  compileOnlyApi(libs.log4jApi)
   compileOnlyApi(libs.checkerQual)
   compileOnlyApi(libs.gson)
   testImplementation(libs.gson)

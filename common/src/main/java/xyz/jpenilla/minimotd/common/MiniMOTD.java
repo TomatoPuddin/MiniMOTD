@@ -23,19 +23,20 @@
  */
 package xyz.jpenilla.minimotd.common;
 
-import java.nio.file.Path;
-import java.util.concurrent.ThreadLocalRandom;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.checkerframework.framework.qual.DefaultQualifier;
-import org.slf4j.Logger;
 import xyz.jpenilla.minimotd.common.config.ConfigManager;
 import xyz.jpenilla.minimotd.common.config.MiniMOTDConfig;
 import xyz.jpenilla.minimotd.common.util.Components;
+
+import java.nio.file.Path;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static net.kyori.adventure.text.Component.newline;
 

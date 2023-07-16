@@ -18,14 +18,14 @@ versions:
   adventurePlatform: 4.3.0
   configurate: 4.1.2
   checkerQual: 3.35.0
-  slf4j: 1.7.32
+  log4j: 2.15.0
   gson: 2.8.0
   guava: 21.0
-  forge: 43.2.18
-  forgeTarget: '[38,)'
-  minecraft: 1.19.2
-  minecraftTarget: '[1.18,1.19.3]'
-  minecraftTargetH: 'mc1.18+1.19.3'
+  forge: 36.2.39
+  forgeTarget: '[36,)'
+  minecraft: 1.16.5
+  minecraftTarget: '[1.16.5,1.17)'
+  minecraftTargetH: 'mc1.16.5'
   mixin: 0.8.5
   jupiterEngine: 5.9.2
 
@@ -54,14 +54,10 @@ dependencies:
     name: checker-qual
     version: { ref: checkerQual }
 
-  slf4jApi:
-    group: org.slf4j
-    name: slf4j-api
-    version: { ref: slf4j }
-  slf4jJdk14:
-    group: org.slf4j
-    name: slf4j-jdk14
-    version: { ref: slf4j }
+  log4jApi:
+    group: org.apache.logging.log4j
+    name: log4j-api
+    version: { ref: log4j }
 
   gson:
     group: com.google.code.gson

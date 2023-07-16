@@ -28,21 +28,21 @@ import com.mojang.brigadier.context.CommandContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
-import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.command.CommandSource;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.event.server.ServerStoppedEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.Bindings;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.event.server.FMLServerStartingEvent;
+import net.minecraftforge.fml.event.server.FMLServerStoppedEvent;
 import net.minecraftforge.fml.loading.FMLEnvironment;
 import net.minecraftforge.fml.loading.FMLPaths;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.checkerframework.checker.nullness.qual.NonNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import xyz.jpenilla.minimotd.common.CommandHandler;
 import xyz.jpenilla.minimotd.common.Constants;
 import xyz.jpenilla.minimotd.common.MiniMOTD;
@@ -56,13 +56,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Base64;
 
-import static net.minecraft.commands.Commands.literal;
+import static net.minecraft.command.Commands.literal;
 
 @Mod(Constants.PluginMetadata.ID)
 public final class MiniMOTDForge implements MiniMOTDPlatform<String> {
   private static MiniMOTDForge instance = null;
 
-  private final Logger logger = LoggerFactory.getLogger(MiniMOTD.class);
+  private final Logger logger = LogManager.getLogger(MiniMOTD.class);
   private final Path dataDirectory = FMLPaths.CONFIGDIR.get().resolve("minimotd");
   private final MiniMOTD<String> miniMOTD;
 
@@ -77,7 +77,7 @@ public final class MiniMOTDForge implements MiniMOTDPlatform<String> {
       throw new IllegalStateException("Cannot create a second instance of " + this.getClass().getName());
 
     instance = this;
-    Bindings.getForgeBus().get().register(this);
+    MinecraftForge.EVENT_BUS.register(this);
     miniMOTD = new MiniMOTD<>(this);
     this.miniMOTD.logger().info("Done initializing MiniMOTD");
   }
@@ -88,20 +88,20 @@ public final class MiniMOTDForge implements MiniMOTDPlatform<String> {
 
   @OnlyIn(Dist.DEDICATED_SERVER)
   @SubscribeEvent
-  public void serverStarting(ServerStartingEvent event) {
+  public void serverStarting(FMLServerStartingEvent event) {
     this.server = event.getServer();
   }
 
   @OnlyIn(Dist.DEDICATED_SERVER)
   @SubscribeEvent
-  public void serverStopped(ServerStoppedEvent event) {
+  public void serverStopped(FMLServerStoppedEvent event) {
     this.server = null;
   }
 
   @OnlyIn(Dist.DEDICATED_SERVER)
   @SubscribeEvent
   public void registerCommand(RegisterCommandsEvent event) {
-    final class WrappingExecutor implements Command<CommandSourceStack> {
+    final class WrappingExecutor implements Command<CommandSource> {
       private final CommandHandler.Executor handler;
 
       WrappingExecutor(final CommandHandler.@NonNull Executor handler) {
@@ -109,9 +109,9 @@ public final class MiniMOTDForge implements MiniMOTDPlatform<String> {
       }
 
       @Override
-      public int run(final @NonNull CommandContext<CommandSourceStack> context) {
+      public int run(final @NonNull CommandContext<CommandSource> context) {
         this.handler.execute((text, success) -> {
-          var source = context.getSource();
+          CommandSource source = context.getSource();
           if(success)
             source.sendSuccess(ComponentConverter.toNative(text), false);
           else

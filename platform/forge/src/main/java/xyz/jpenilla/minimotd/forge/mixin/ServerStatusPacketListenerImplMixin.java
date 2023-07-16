@@ -24,10 +24,10 @@
 package xyz.jpenilla.minimotd.forge.mixin;
 
 import com.mojang.authlib.GameProfile;
-import net.minecraft.network.protocol.status.ServerStatus;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.ServerStatusResponse;
+import net.minecraft.network.status.ServerStatusNetHandler;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerStatusPacketListenerImpl;
-import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -41,17 +41,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Objects;
 
-@Mixin(ServerStatusPacketListenerImpl.class)
+@Mixin(ServerStatusNetHandler.class)
 abstract class ServerStatusPacketListenerImplMixin {
 
   @Redirect(
     method = "handleStatusRequest",
-    at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;getStatus()Lnet/minecraft/network/protocol/status/ServerStatus;")
+    at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;getStatus()Lnet/minecraft/network/ServerStatusResponse;")
   )
-  public ServerStatus injectHandleStatusRequest(final MinecraftServer server) {
+  public ServerStatusResponse injectHandleStatusRequest(final MinecraftServer server) {
     try {
       final MiniMOTDForge miniMOTDForge = MiniMOTDForge.get();
-      final ServerStatus status = Objects.requireNonNull(server.getStatus(), "status");
+      final ServerStatusResponse status = Objects.requireNonNull(server.getStatus(), "status");
 
       final MiniMOTD<String> miniMOTD = miniMOTDForge.miniMOTD();
       final MiniMOTDConfig config = miniMOTD.configManager().mainConfig();
@@ -70,14 +70,14 @@ abstract class ServerStatusPacketListenerImplMixin {
       if (response.hidePlayerCount()) {
         status.setPlayers(null);
       } else {
-        final ServerStatus.Players newPlayers = new ServerStatus.Players(
+        final ServerStatusResponse.Players newPlayers = new ServerStatusResponse.Players(
           response.playerCount().maxPlayers(),
           response.playerCount().onlinePlayers());
         if (!response.disablePlayerListHover()) {
-          var players = new ArrayList<>(server.getPlayerList().getPlayers());
+          ArrayList<PlayerEntity> players = new ArrayList<>(server.getPlayerList().getPlayers());
           Collections.shuffle(players);
 
-          GameProfile[] gameProfiles = players.stream().map(Player::getGameProfile).limit(12).toArray(GameProfile[]::new);
+          GameProfile[] gameProfiles = players.stream().map(PlayerEntity::getGameProfile).limit(12).toArray(GameProfile[]::new);
           newPlayers.setSample(gameProfiles);
         }
         status.setPlayers(newPlayers);
