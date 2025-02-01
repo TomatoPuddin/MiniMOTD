@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package xyz.jpenilla.minimotd.forge.mixin;
+package xyz.jpenilla.minimotd.neoforge.mixin;
 
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.DataResult;
@@ -33,7 +33,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import xyz.jpenilla.minimotd.forge.access.ServerStatusFaviconAccess;
+import xyz.jpenilla.minimotd.neoforge.access.ServerStatusFaviconAccess;
 
 @Mixin(ServerStatus.Favicon.class)
 abstract class ServerStatusFaviconMixin implements ServerStatusFaviconAccess {

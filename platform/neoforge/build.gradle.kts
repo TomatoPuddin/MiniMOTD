@@ -1,75 +1,46 @@
-import net.minecraftforge.gradle.userdev.UserDevExtension
+import net.neoforged.moddevgradle.dsl.NeoForgeExtension
 import java.util.Date
 import java.text.SimpleDateFormat
 
 plugins {
-  id("net.minecraftforge.gradle")
-  id("org.spongepowered.mixin") apply true
+  id("net.neoforged.moddev")
   id("minimotd.platform-conventions")
   id("minimotd.shadow-platform")
   id("com.github.johnrengelman.shadow")
 }
 
 val shade: Configuration by configurations.creating
-val gameVersion: String = libs.versions.minecraft.get()
-val loaderVersion: String = libs.versions.forge.get()
+val neoforgeVersion: String = libs.versions.neoforge.get()
 val gameVersionRange: String = libs.versions.minecraftTarget.get()
 val gameVersionRangeH: String = libs.versions.minecraftTargetH.get()
-val forgeVersionRange: String = libs.versions.forgeTarget.get()
+val neoforgeVersionRange: String = libs.versions.neoforgeTarget.get()
 
-configure<UserDevExtension> {
-  mappings("official", gameVersion)
-
-  accessTransformer(file("src/main/resources/META-INF/accesstransformer.cfg"))
-  copyIdeResources.set(true)
+configure<NeoForgeExtension> {
+  version = neoforgeVersion
 
   runs {
     create("server") {
-      workingDirectory(file("run"))
-
-      taskName = "server"
-
-      property("forge.logging.markers", "SCAN,REGISTRIES,REGISTRYDUMP")
-      property("forge.logging.console.level", "debug")
-
-      mods {
-        create(Constants.ID) {
-          source(sourceSets["main"])
-          source(sourceSets["test"])
-        }
-      }
+      server()
     }
   }
 }
 
-configure<org.spongepowered.asm.gradle.plugins.MixinExtension> {
-  add(sourceSets["main"], "${Constants.ID}.refmap.json")
-  config("${Constants.ID}.mixins.json")
-}
-
 dependencies {
-  minecraft("net.minecraftforge:forge:${gameVersion}-${loaderVersion}")
-
   shade(implementation(projects.minimotdCommon){})
-
-  annotationProcessor(variantOf(libs.mixin){
-    classifier("processor")
-  })
 }
 
 indra {
   javaVersions {
-    target(17)
+    target(21)
   }
 }
 
 tasks {
   processResources {
     val replaceProperties = mapOf(
-      "minecraft_version" to gameVersion,
       "minecraft_version_range" to gameVersionRange,
-      "forge_version" to loaderVersion,
-      "forge_version_range" to forgeVersionRange,
+      "neoforge_version" to neoforgeVersion,
+      "neoforge_version_range" to neoforgeVersionRange,
       "mod_id" to Constants.ID,
       "mod_name" to Constants.DISPLAY_NAME,
       "mod_license" to "MIT",
@@ -80,17 +51,9 @@ tasks {
       "issue_tracker_url" to Constants.GITHUB_ISSUES_URL)
 
     inputs.properties(replaceProperties)
-    filesMatching(listOf("META-INF/mods.toml", "pack.mcmeta")) {
+    filesMatching(listOf("META-INF/neoforge.mods.toml", "pack.mcmeta")) {
       expand(replaceProperties)
     }
-  }
-
-  assemble {
-    dependsOn(shadowJar)
-  }
-
-  reobf {
-    create(shadowJar.name)
   }
 
   shadowJar {
@@ -106,11 +69,15 @@ tasks {
       ))
     }
 
+    exclude {
+      it.path.startsWith("META-INF/maven")
+        || it.path.startsWith("META-INF/services")
+        || it.path.startsWith("META-INF/versions/9")
+    }
     archiveFileName.set("minimotd-reforged-$gameVersionRangeH-${project.version}.jar")
 
     configurations = listOf(shade)
     commonRelocation("io.leangen.geantyref")
     commonRelocation("net.kyori")
-    finalizedBy("reobfShadowJar")
   }
 }

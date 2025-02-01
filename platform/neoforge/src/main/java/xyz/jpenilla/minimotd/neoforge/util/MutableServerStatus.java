@@ -21,13 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package xyz.jpenilla.minimotd.forge.util;
+package xyz.jpenilla.minimotd.neoforge.util;
 
 import java.util.Objects;
 import java.util.Optional;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.status.ServerStatus;
-import net.minecraftforge.network.ServerStatusPing;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.framework.qual.DefaultQualifier;
 
@@ -39,7 +38,7 @@ public final class MutableServerStatus {
   private Optional<ServerStatus.Version> version;
   private Optional<ServerStatus.Favicon> favicon;
   private boolean enforcesSecureChat;
-  private final Optional<ServerStatusPing> forgeData;
+  private final boolean isModed;
 
   public MutableServerStatus(final ServerStatus status) {
     this.description = status.description();
@@ -47,11 +46,11 @@ public final class MutableServerStatus {
     this.version = status.version();
     this.favicon = status.favicon();
     this.enforcesSecureChat = status.enforcesSecureChat();
-    this.forgeData = status.forgeData();
+    this.isModed = status.isModded();
   }
 
   public ServerStatus toServerStatus() {
-    return new ServerStatus(this.description, this.players, this.version, this.favicon, this.enforcesSecureChat, this.forgeData);
+    return new ServerStatus(this.description, this.players, this.version, this.favicon, this.enforcesSecureChat, this.isModed);
   }
 
   public Component description() {

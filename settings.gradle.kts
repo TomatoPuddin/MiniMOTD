@@ -4,8 +4,7 @@ pluginManagement {
   repositories {
     gradlePluginPortal()
     mavenCentral()
-    maven("https://maven.minecraftforge.net/")
-    maven("https://repo.spongepowered.org/maven")
+    maven("https://maven.neoforged.net/releases")
   }
   includeBuild("build-logic")
 }
@@ -28,5 +27,5 @@ fun dist(name: String) = setup("minimotd-$name", "dist/$name")
 setup("minimotd-common", "common")
 
 sequenceOf(
-  "forge",
+  "neoforge",
 ).forEach(::platform)

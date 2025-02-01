@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package xyz.jpenilla.minimotd.forge.mixin;
+package xyz.jpenilla.minimotd.neoforge.mixin;
 
 import com.mojang.authlib.GameProfile;
 import net.minecraft.network.protocol.status.ServerStatus;
@@ -35,12 +35,11 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import xyz.jpenilla.minimotd.common.MiniMOTD;
 import xyz.jpenilla.minimotd.common.PingResponse;
 import xyz.jpenilla.minimotd.common.config.MiniMOTDConfig;
-import xyz.jpenilla.minimotd.forge.MiniMOTDForge;
-import xyz.jpenilla.minimotd.forge.util.ComponentConverter;
-import xyz.jpenilla.minimotd.forge.util.MutableServerStatus;
+import xyz.jpenilla.minimotd.neoforge.MiniMOTDNeoForge;
+import xyz.jpenilla.minimotd.neoforge.util.ComponentConverter;
+import xyz.jpenilla.minimotd.neoforge.util.MutableServerStatus;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Mixin(ServerStatusPacketListenerImpl.class)
 abstract class ServerStatusPacketListenerImplMixin {
@@ -51,7 +50,7 @@ abstract class ServerStatusPacketListenerImplMixin {
   )
   public ServerStatus injectHandleStatusRequest(final ServerStatusPacketListenerImpl instance) {
     try {
-      final MiniMOTDForge miniMOTDForge = MiniMOTDForge.get();
+      final MiniMOTDNeoForge miniMOTDForge = MiniMOTDNeoForge.get();
       final MinecraftServer minecraftServer = miniMOTDForge.requireServer();
       final ServerStatus vanillaStatus = Objects.requireNonNull(minecraftServer.getStatus(), "vanillaStatus");
 
@@ -66,7 +65,7 @@ abstract class ServerStatusPacketListenerImplMixin {
 
       final MutableServerStatus modifiedStatus = new MutableServerStatus(vanillaStatus);
       response.motd(motd -> {
-          modifiedStatus.description(ComponentConverter.toNative(motd));
+          modifiedStatus.description(ComponentConverter.toNative(motd, MiniMOTDNeoForge.get().requireServer().registryAccess()));
       });
       response.icon(favicon -> modifiedStatus.favicon(Optional.of(favicon)));
 
@@ -77,7 +76,7 @@ abstract class ServerStatusPacketListenerImplMixin {
         Collections.shuffle(players);
         List<GameProfile> profiles = response.disablePlayerListHover()
           ? Collections.emptyList()
-          : players.stream().map(Player::getGameProfile).limit(12).collect(Collectors.toList());
+          : players.stream().map(Player::getGameProfile).limit(12).toList();
 
         final ServerStatus.Players newPlayers = new ServerStatus.Players(
           response.playerCount().maxPlayers(),
@@ -89,7 +88,7 @@ abstract class ServerStatusPacketListenerImplMixin {
 
       return modifiedStatus.toServerStatus();
     } catch (Exception e) {
-      MiniMOTDForge.get().logger().error("Error processing motd", e);
+      MiniMOTDNeoForge.get().logger().error("Error processing motd", e);
       throw e;
     }
   }

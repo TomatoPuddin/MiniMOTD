@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package xyz.jpenilla.minimotd.forge.access;
+package xyz.jpenilla.minimotd.neoforge.access;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 

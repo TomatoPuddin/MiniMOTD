@@ -21,23 +21,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package xyz.jpenilla.minimotd.forge;
+package xyz.jpenilla.minimotd.neoforge;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.protocol.status.ServerStatus;
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.api.distmarker.OnlyIn;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.event.server.ServerStoppedEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.Bindings;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.loading.FMLEnvironment;
-import net.minecraftforge.fml.loading.FMLPaths;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,8 +45,8 @@ import xyz.jpenilla.minimotd.common.CommandHandler;
 import xyz.jpenilla.minimotd.common.Constants;
 import xyz.jpenilla.minimotd.common.MiniMOTD;
 import xyz.jpenilla.minimotd.common.MiniMOTDPlatform;
-import xyz.jpenilla.minimotd.forge.access.ServerStatusFaviconAccess;
-import xyz.jpenilla.minimotd.forge.util.ComponentConverter;
+import xyz.jpenilla.minimotd.neoforge.access.ServerStatusFaviconAccess;
+import xyz.jpenilla.minimotd.neoforge.util.ComponentConverter;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -56,8 +56,8 @@ import java.nio.file.Path;
 import static net.minecraft.commands.Commands.literal;
 
 @Mod(Constants.PluginMetadata.ID)
-public final class MiniMOTDForge implements MiniMOTDPlatform<ServerStatus.Favicon> {
-  private static MiniMOTDForge instance = null;
+public final class MiniMOTDNeoForge implements MiniMOTDPlatform<ServerStatus.Favicon> {
+  private static MiniMOTDNeoForge instance = null;
 
   private final Logger logger = LoggerFactory.getLogger(MiniMOTD.class);
   private final Path dataDirectory = FMLPaths.CONFIGDIR.get().resolve("MiniMOTD");
@@ -65,7 +65,7 @@ public final class MiniMOTDForge implements MiniMOTDPlatform<ServerStatus.Favico
 
   private MinecraftServer server;
 
-  public MiniMOTDForge() {
+  public MiniMOTDNeoForge() {
     if(FMLEnvironment.dist != Dist.DEDICATED_SERVER) {
       miniMOTD = null;
       return;
@@ -74,7 +74,7 @@ public final class MiniMOTDForge implements MiniMOTDPlatform<ServerStatus.Favico
       throw new IllegalStateException("Cannot create a second instance of " + this.getClass().getName());
 
     instance = this;
-    Bindings.getForgeBus().get().register(this);
+    NeoForge.EVENT_BUS.register(this);
     miniMOTD = new MiniMOTD<>(this);
     this.miniMOTD.logger().info("Done initializing MiniMOTD");
   }
@@ -109,12 +109,12 @@ public final class MiniMOTDForge implements MiniMOTDPlatform<ServerStatus.Favico
       public int run(final @NonNull CommandContext<CommandSourceStack> context) {
         this.handler.execute((text, success) -> {
           var source = context.getSource();
-          if(source.silent)
+          if(source.isSilent())
             return;
           if(success && source.source.acceptsSuccess())
-            source.sendSystemMessage(ComponentConverter.toNative(text));
+            source.sendSystemMessage(ComponentConverter.toNative(text, source.registryAccess()));
           else if(!success)
-            source.sendFailure(ComponentConverter.toNative(text));
+            source.sendFailure(ComponentConverter.toNative(text, source.registryAccess()));
         });
         return Command.SINGLE_SUCCESS;
       }
@@ -130,7 +130,7 @@ public final class MiniMOTDForge implements MiniMOTDPlatform<ServerStatus.Favico
     );
   }
 
-  public static @NonNull MiniMOTDForge get() {
+  public static @NonNull MiniMOTDNeoForge get() {
     return instance;
   }
 
